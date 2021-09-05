@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale-1.0">
-        <title>my-package</title>
+        <title>my-package render模板</title>
     </head>
     <style>
         .active {
@@ -13,7 +13,25 @@
     <body>
         <!-- 宿主文件 -->
         <div id="app">
-            
+            <h2 :title="title">
+                <!-- 用户输入 -->
+                {{pack}}
+                <p><input v-model="pack" type="text" @keydown.enter="addPack" /></p>
+                <button @click="addPack">新增</button>
+                <br>
+                <!-- 插值文本 -->
+                {{title}}
+                <!-- 条件渲染 -->
+                <p v-if="packages.length == 0">然而并没有</p>
+                <!-- 列表渲染 -->
+                <div class="pack-list" v-else>
+                    <div v-for="c in packages" :key="c" :class="{active: selectedPack === c}" 
+                        :style="{backgroundColor: selectedPack === c ? '#ddd' : 'transparent'}"
+                        @click="selectedPack = c">
+                        <div>{{ c }}</div>
+                    </div>
+                </div>
+            </h2>
         </div>
         
         <script src="vue.js"></script>
@@ -38,16 +56,12 @@
                         // 2. 清空 packages
                         this.pack = ''
                     }
-                },
-                render() {
-                    with(this){return _c('div',{attrs:{"id":"app"}},[_c('h2',{attrs:{"title":title}},[_v("\n                "+_s(pack)+"\n                "),_c('p',[_c('input',{directives:[{name:"model",rawName:"v-model",value:(pack),expression:"pack"}],attrs:{"type":"text"},domProps:{"value":(pack)},on:{"keydown":function($event){if(!$event.type.indexOf('key')&&_k($event.keyCode,"enter",13,$event.key,"Enter"))return null;return addPack.apply(null, arguments)},"input":function($event){if($event.target.composing)return;pack=$event.target.value}}})]),_v(" "),_c('button',{on:{"click":addPack}},[_v("新增")]),_v(" "),_c('br'),_v(" "),_v("\n                "+_s(title)+"\n                "),_v(" "),(packages.length == 0)?_c('p',[_v("然而并没有")]):_c('div',{staticClass:"pack-list"},_l((packages),function(c){return _c('div',{key:c,class:{active: selectedPack === c},style:({backgroundColor: selectedPack === c ? '#ddd' : 'transparent'}),on:{"click":function($event){selectedPack = c}}},[_c('div',[_v(_s(c))])])}),0)])])}
                 }
             })
             setTimeout(() => {
                 app.title = '有糖'
             }, 3000)
 
-            console.log(app.$options.render)
         </script>
     </body>
 </html>
