@@ -21,11 +21,15 @@
                 <br>
                 <!-- 插值文本 -->
                 {{title}}
+                <!-- 条件渲染 -->
+                <p v-if="packages.length == 0">然而并没有</p>
                 <!-- 列表渲染 -->
-                <div v-for="c in packages" :key="c" :class="{active: selectedPack === c}" 
-                    :style="{backgroundColor: selectedPack === c ? '#ddd' : 'transparent'}"
-                    @click="selectedPack = c">
-                    <div>{{ c }}</div>
+                <div class="pack-list" v-else>
+                    <div v-for="c in packages" :key="c" :class="{active: selectedPack === c}" 
+                        :style="{backgroundColor: selectedPack === c ? '#ddd' : 'transparent'}"
+                        @click="selectedPack = c">
+                        <div>{{ c }}</div>
+                    </div>
                 </div>
             </h2>
         </div>
@@ -41,7 +45,8 @@
                         title: '我的裤兜',
                         pack: 'miao',
                         selectedPack: '',
-                        packages: ['糖','sweet 糖']
+                        // packages: ['糖','sweet 糖'],
+                        packages: []
                     }
                 },
                 methods: {
