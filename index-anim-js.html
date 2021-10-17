@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale-1.0">
+        <title>my-package</title>
+    </head>
+    <style>
+        .active {
+            background-color: #ddd;
+        }
+        .message-box {
+            padding: 10px 20px;
+            background: #4fc08d;
+            border: 1px solid #42b983;
+        }
+        .success {
+            background: #4fc08d;
+            border: 1px solid #42b983;
+        }
+        .warnning {
+            background: #f66;
+            border: 1px solid #d63200;
+        }
+        .message-box-close {
+            float: right;
+        }
+        /* 动画相关样式 */
+        /* 入场之前的状态 */
+        /* .fade-enter, 
+        .fade-leave-to {
+            opacity: 0
+        } */
+
+        /* 过度定义 */
+        .fade-enter-active, 
+        .fade-leave-active {
+            transition: opacity 1.5s;
+        }
+    </style>
+    <body>
+        <!-- 宿主文件 -->
+        <div id="app">
+            <!-- 弹窗组件 -->
+            <!-- <message :show="isShow" @close="isShow=$event"> -->
+            <!-- <message :show.sync="isShow" @update:isShow="false"> -->
+            <!-- <message :show.sync="showWarn" class="warnning "> -->
+            <message ref="msgWarnning" class="warnning ">
+                <!-- 命名为 title 插槽内容 -->
+                <template v-slot:title="slotProps">
+                    <strong>警告</strong>
+                    <!-- <strong>{{title}}</strong> -->
+                    <!-- <strong>{{slotProps.title}}</strong> -->
+                </template>
+                <!-- 默认插槽内容 -->
+                <!-- <template v-slot:default>defaultcontent</template> -->
+                <template>
+                    输入内容不能为空
+                </template>
+            </message>
+            <!-- <message :show.sync="show" class="success"> -->
+            <message ref="msgSuccess" class="success">
+                <!-- 命名为 title 插槽内容 -->
+                <template v-slot:title="slotProps">
+                    <strong>恭喜</strong>
+                    <strong>{{title}}</strong>
+                    <strong>{{slotProps.title}}</strong>
+                </template>
+                <!-- 默认插槽内容 -->
+                <!-- <template v-slot:default>defaultcontent</template> -->
+                <template>
+                    新增内容成功
+                </template>
+            </message>
+            <h2 :title="title">
+                <!-- 插值文本 -->
+                {{title}}
+            </h2>
+            <!-- toolbar -->
+            <div class="toolbar">
+                <button @click="$bus.$emit('message-close')">清空提示框</button>
+            </div>
+                {{pack.name}}
+                <!-- 新增内容 -->
+                <!-- <pack-add @add-pack="addPack"></pack-add> -->
+                <pack-add v-model="pack.name" @add-pack="addPack"></pack-add>
+                <!-- <pack-add :value="pack" @input="pack=$event" @add-pack="addPack"></pack-add> -->
+                
+                <!-- 批量更新价格 -->
+                <p>
+                    <input type="text" v-model.number="price">
+                    <button @click="batchUpdate">批量更新价格</button>
+                </p>
+                <!-- 列表组件 -->
+                <pack-list :packages='packages'></pack-list>
+                <!-- 物件总数 -->
+                <p>
+                    <!-- 表达式 -->
+                    <!-- 物件总数： {{packages.length + '个'}} -->
+                    <!-- {{total}} -->
+                    <!-- 监听器 -->
+                    {{totalCount}}
+                </p>
+        </div>
+        
+        <script src="vue.js"></script>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
+        <script>
+            // 总线
+            Vue.prototype.$bus = new Vue();
+            // 弹窗组件
+            Vue.component('message',{
+                // props: {
+                //     show: {
+                //         type: Boolean,
+                //         default: false
+                //     },
+                // },
+                data() {
+                    return {
+                        show: false
+                    }
+                },
+                template: `
+                    <transition name="fade" 
+                        @before-enter="beforeEnter"
+                        @before-leave="beforeLeave"
+                        @enter="enter"
+                        @leave="leave"
+                    >
+                        <div class="message-box" v-if="show">
+                            <!-- 具名插槽 -->
+                            <slot name="title" title="来自子组件的内容"></slot>
+                            <!-- 通过 slot 获取传入内容 -->
+                            <slot></slot>
+                            <!-- <span class="message-box-close" @click="$emit('close',this.show)">X</span> -->
+                            <span class="message-box-close" 
+                                @click="toggle">X</span>
+                        </div>
+                    </transition>
+                `,
+                // @click="$emit('update:show',this.show)">X</span>
+                mounted () {
+                    this.$bus.$on('message-close',() => {
+                        // this.$emit('update:show',false)
+                        this.toggle();
+                    });
+                },
+                methods: {
+                    toggle() {
+                        this.show = !this.show;
+                    },
+                    beforeEnter(el){
+                        // 动画初始状态
+                        el.style.opacity=0;
+                    },
+                    enter(el, done){
+                        // 触发回流激活动画
+                        document.body.offsetHeight;
+                        // 动画的结束状态
+                        el.style.opacity=1;
+                        // 监听动画的结束事件，并执行done函数
+                        el.addEventListener('transitionend', done);
+                    },
+                    beforeLeave(el) {
+                        el.style.opacity = 1;
+                    },
+                    leave (el, done) {
+                        document.body.offsetHeight;
+                        el.style.opacity = 0 ;
+                        el.addEventListener('transitionend', done);
+                    }
+                },
+            })
+            // 内容新增
+            Vue.component('pack-add',{
+                // data() {
+                //     return {
+                //         pack: 'miao',
+                //     }
+                // },
+                props: 
+                ['value'],
+                // {
+                //     value: {
+                //         type: String,
+                //         default: ''
+                //     },
+                // },
+                methods: {
+                    addPack() {
+                        // 派发事件通知父组件新增课程
+                        // this.$emit('add-pack',this.pack);
+                        this.$emit('add-pack');
+                        // this.pack='';
+                    },
+                    onInput(e) {
+                        this.$emit('input',e.target.value)
+                    }
+                },
+                template: `
+                    <div>
+                        <!-- 用户输入 -->
+                        <!-- {{pack}} -->
+                        <p>
+                            <!-- <input v-model="pack.name" type="text" @keydown.enter="addPack" /> -->
+                            <input type="text" :value="value" 
+                            @input="onInput"
+                            @keydown.enter="addPack" 
+                            ref="inp" />
+                            <button @click="addPack">新增</button>
+                        </p>    
+                    </div>
+                `
+                ,
+                mounted () {
+                    this.$refs.inp.focus();
+                },
+            })
+            // 口袋列表组件
+            Vue.component('pack-list', {
+                data() {
+                    return {
+                        selectedPack: '',
+                    }
+                },
+                props: {
+                    packages: {
+                        type: Array,
+                        default: []
+                    },
+                },
+                template: `
+                    <div>
+                        <!-- 条件渲染 -->
+                        <p v-if="packages.length == 0">没有糖</p>
+                        <!-- 列表渲染 -->
+                        <div class="pack-list" v-else>
+                            <div v-for="c in packages" :key="c.name" :class="{active: selectedPack === c}" 
+                                :style="{backgroundColor: selectedPack === c ? '#ddd' : 'transparent'}"
+                                @click="selectedPack = c">
+                                <div>{{ c.name }} - \${{c.price}}</div>
+                            </div>
+                        </div>    
+                    </div>
+                `
+            })
+            // 模拟异步数据的调用
+            function getPackges(params) {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([{name:'糖'},{name:'sweet 糖'}])
+                    }, 2000);
+                })
+            }
+            // 1.创建vue 实例
+            const app = new Vue({
+                el: '#app',
+                data() {
+                    return {
+                        // show: false,
+                        // showWarn: false,
+                        title: '我的口袋',
+                        pack: {name:'miao'},
+                        // selectedPack: '',
+                        totalCount: '',
+                        // packages: ['糖','sweet 糖'],
+                        packages: [],
+                        price: 0
+                    }
+                },
+                // 组件实例已创建，由于未挂载，dom不存在
+                async created () {
+                    const packages = await getPackges();
+                    this.packages = packages;
+                    // 批量更新价格
+                    this.batchUpdate();
+                },
+                // 组件已挂在，dom 已存在
+                // mounted () {
+                //     ;
+                // },
+                methods: {
+                    batchUpdate(){
+                        this.packages.forEach(c => {
+                            // c.price = this.price;
+                            // Vue.set(c, 'price', this.price)
+                            this.$set(c, 'price', this.price)
+                        });
+                    },
+                    addPack() {
+                        if (this.pack.name) {
+                            // 1. 添加 something 同 packages
+                            console.log('pack',this.pack)
+                            this.$set(this.pack,'price',0)
+                            this.packages.push(this.pack)
+                            // 2. 清空 packages
+                            this.pack = {}
+
+                            // 显示提示信息
+                            // this.show=true;
+                            this.$refs.msgSuccess.toggle();
+                        } else {
+                            // this.showWarn = true;
+                            this.$refs.msgWarnning.toggle();
+                        }
+                    }
+                },
+                computed: {
+                    total() {
+                        // 计算属性有缓存性，如果值没有发生变化，则页面不会重新渲染
+                        return this.packages.length + '个' 
+                    }
+                },
+                // watch 监听函数页面加载不会立即执行，只有监听的值变化后才会执行
+                // watch: {
+                //     packages(newValue, oldValue) {
+                //         this.totalCount = newValue.length + '个'
+                //     }
+                // },
+                // 添加参数，immediate 是立即执行的选项
+                watch: {
+                    packages: {
+                        immediate: true,
+                        deep: true,  // 数据结构比较深时需要添加此选项(目前数组只有一层)
+                        handler(newValue, oldValue) {
+                            this.totalCount = newValue.length + '个'
+                        }
+                    }
+                },
+            })
+            setTimeout(() => {
+                app.title = '有糖'
+            }, 2000)
+
+            console.log(app.$options.render)
+        </script>
+    </body>
+</html>
