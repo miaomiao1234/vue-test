@@ -14,6 +14,14 @@
             background: #4fc08d;
             border: 1px solid #42b983;
         }
+        .success {
+            background: #4fc08d;
+            border: 1px solid #42b983;
+        }
+        .warnning {
+            background: #f66;
+            border: 1px solid #d63200;
+        }
         .message-box-close {
             float: right;
         }
@@ -24,7 +32,22 @@
             <!-- 弹窗组件 -->
             <!-- <message :show="isShow" @close="isShow=$event"> -->
             <!-- <message :show.sync="isShow" @update:isShow="false"> -->
-            <message :show.sync="show">
+            <!-- <message :show.sync="showWarn" class="warnning "> -->
+            <message ref="msgWarnning" class="warnning ">
+                <!-- 命名为 title 插槽内容 -->
+                <template v-slot:title="slotProps">
+                    <strong>警告</strong>
+                    <!-- <strong>{{title}}</strong> -->
+                    <!-- <strong>{{slotProps.title}}</strong> -->
+                </template>
+                <!-- 默认插槽内容 -->
+                <!-- <template v-slot:default>defaultcontent</template> -->
+                <template>
+                    输入内容不能为空
+                </template>
+            </message>
+            <!-- <message :show.sync="show" class="success"> -->
+            <message ref="msgSuccess" class="success">
                 <!-- 命名为 title 插槽内容 -->
                 <template v-slot:title="slotProps">
                     <strong>恭喜</strong>
@@ -41,12 +64,21 @@
                 <!-- 插值文本 -->
                 {{title}}
             </h2>
-                {{pack}}
+            <!-- toolbar -->
+            <div class="toolbar">
+                <button @click="$bus.$emit('message-close')">清空提示框</button>
+            </div>
+                {{pack.name}}
                 <!-- 新增内容 -->
                 <!-- <pack-add @add-pack="addPack"></pack-add> -->
-                <pack-add v-model="pack" @add-pack="addPack"></pack-add>
+                <pack-add v-model="pack.name" @add-pack="addPack"></pack-add>
                 <!-- <pack-add :value="pack" @input="pack=$event" @add-pack="addPack"></pack-add> -->
                 
+                <!-- 批量更新价格 -->
+                <p>
+                    <input type="text" v-model.number="price">
+                    <button @click="batchUpdate">批量更新价格</button>
+                </p>
                 <!-- 列表组件 -->
                 <pack-list :packages='packages'></pack-list>
                 <!-- 物件总数 -->
@@ -62,13 +94,20 @@
         <script src="vue.js"></script>
         <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
         <script>
+            // 总线
+            Vue.prototype.$bus = new Vue();
             // 弹窗组件
             Vue.component('message',{
-                props: {
-                    show: {
-                        type: Boolean,
-                        default: false
-                    },
+                // props: {
+                //     show: {
+                //         type: Boolean,
+                //         default: false
+                //     },
+                // },
+                data() {
+                    return {
+                        show: false
+                    }
                 },
                 template: `
                     <div class="message-box" v-if="show">
@@ -78,9 +117,21 @@
                         <slot></slot>
                         <!-- <span class="message-box-close" @click="$emit('close',this.show)">X</span> -->
                         <span class="message-box-close" 
-                            @click="$emit('update:show',this.show)">X</span>
+                            @click="toggle">X</span>
                     </div>
-                `
+                `,
+                // @click="$emit('update:show',this.show)">X</span>
+                mounted () {
+                    this.$bus.$on('message-close',() => {
+                        // this.$emit('update:show',false)
+                        this.toggle();
+                    });
+                },
+                methods: {
+                    toggle() {
+                        this.show = !this.show;
+                    }
+                },
             })
             // 内容新增
             Vue.component('pack-add',{
@@ -113,14 +164,19 @@
                         <!-- 用户输入 -->
                         <!-- {{pack}} -->
                         <p>
-                            <!-- <input v-model="pack" type="text" @keydown.enter="addPack" /> -->
+                            <!-- <input v-model="pack.name" type="text" @keydown.enter="addPack" /> -->
                             <input type="text" :value="value" 
                             @input="onInput"
-                            @keydown.enter="addPack" />
+                            @keydown.enter="addPack" 
+                            ref="inp" />
                             <button @click="addPack">新增</button>
                         </p>    
                     </div>
                 `
+                ,
+                mounted () {
+                    this.$refs.inp.focus();
+                },
             })
             // 口袋列表组件
             Vue.component('pack-list', {
@@ -141,10 +197,10 @@
                         <p v-if="packages.length == 0">没有糖</p>
                         <!-- 列表渲染 -->
                         <div class="pack-list" v-else>
-                            <div v-for="c in packages" :key="c" :class="{active: selectedPack === c}" 
+                            <div v-for="c in packages" :key="c.name" :class="{active: selectedPack === c}" 
                                 :style="{backgroundColor: selectedPack === c ? '#ddd' : 'transparent'}"
                                 @click="selectedPack = c">
-                                <div>{{ c }}</div>
+                                <div>{{ c.name }} - \${{c.price}}</div>
                             </div>
                         </div>    
                     </div>
@@ -154,7 +210,7 @@
             function getPackges(params) {
                 return new Promise(resolve => {
                     setTimeout(() => {
-                        resolve(['糖','sweet 糖'])
+                        resolve([{name:'糖'},{name:'sweet 糖'}])
                     }, 2000);
                 })
             }
@@ -163,33 +219,52 @@
                 el: '#app',
                 data() {
                     return {
-                        show: false,
+                        // show: false,
+                        // showWarn: false,
                         title: '我的口袋',
-                        pack: 'miao',
+                        pack: {name:'miao'},
                         // selectedPack: '',
                         totalCount: '',
                         // packages: ['糖','sweet 糖'],
-                        packages: []
+                        packages: [],
+                        price: 0
                     }
                 },
                 // 组件实例已创建，由于未挂载，dom不存在
                 async created () {
                     const packages = await getPackges();
                     this.packages = packages;
+                    // 批量更新价格
+                    this.batchUpdate();
                 },
                 // 组件已挂在，dom 已存在
                 // mounted () {
                 //     ;
                 // },
                 methods: {
+                    batchUpdate(){
+                        this.packages.forEach(c => {
+                            // c.price = this.price;
+                            // Vue.set(c, 'price', this.price)
+                            this.$set(c, 'price', this.price)
+                        });
+                    },
                     addPack() {
-                        // 1. 添加 something 同 packages
-                        this.packages.push(this.pack)
-                        // 2. 清空 packages
-                        this.pack = ''
+                        if (this.pack.name) {
+                            // 1. 添加 something 同 packages
+                            console.log('pack',this.pack)
+                            this.$set(this.pack,'price',0)
+                            this.packages.push(this.pack)
+                            // 2. 清空 packages
+                            this.pack = {}
 
-                        // 显示提示信息
-                        this.show=true;
+                            // 显示提示信息
+                            // this.show=true;
+                            this.$refs.msgSuccess.toggle();
+                        } else {
+                            // this.showWarn = true;
+                            this.$refs.msgWarnning.toggle();
+                        }
                     }
                 },
                 computed: {
